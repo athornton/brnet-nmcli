@@ -1,0 +1,11 @@
+# brnet-nmcli settings
+
+# brnet-nmcli executable
+BRNET="/usr/local/sbin/brnet-nmcli"
+
+# Default settings
+# BRIDGE_USER="pi"
+# NETDEV_GRP="netdev"
+# IF="eth0"
+# BRIDGE="br0"
+# NUM_TAP=4

@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+
+#
+# Easy bridged networking.
+#
+# Originally for use for a Raspberry Pi running a bunch of emulators,
+# but probably generally pretty useful.
+#
+# Requires NetworkManager, which as of Debian Bookworm doesn't seem to be
+# optional anymore.  Earlier versions used brctl.
+#
+
+start_bridge() {
+    # Get physical device MAC for the bridge
+    local if_mac=$(nmcli dev show ${IF} | \
+		   grep 'GENERAL.HWADDR:' | \
+		   awk '{print $2}')
+    # Get rid of it
+    nmcli con del ${IF}
+    # Add a bridge with the same MAC
+    nmcli con add type bridge ifname ${BRIDGE} con-name ${BRIDGE} \
+	  bridge.mac ${if_mac} save no
+    # Use the real Ethernet to provide access to the bridge
+    nmcli con add type bridge-slave ifname ${IF} con-name ${IF} \
+	  master ${BRIDGE} save no
+    # Get bridge address with DHCP
+    nmcli con modify ${BRIDGE} ipv4.method auto
+    # Add all our tap devices to the bridge
+    for idx in $(seq ${FIRST_TAP} ${LAST_TAP}); do
+	nmcli conn add type tun \
+	      ifname tap${idx} con-name tap${idx} \
+	      slave-type bridge master ${BRIDGE} \
+	      mode tap owner ${_UID} group ${_GID} \
+	      save no
+    done
+}
+
+stop_bridge() {
+    # Remove all the tap devices
+    for idx in $(seq ${LAST_TAP} -1 ${FIRST_TAP}); do
+	nmcli con del tap${idx}
+    done
+    # Remove the physical device
+    nmcli con del ${IF}
+    # Remove the bridge
+    nmcli con del ${BRIDGE}
+    # Add the physical device with DHCP, and let it save to disk
+    nmcli con add type ethernet ifname ${IF} con-name ${IF} ipv4.method auto
+}
+
+usage() {
+    echo "$0 [options] start|stop" 1>&2
+    echo "  options: -h: display help" 1>&2
+    echo "           -u user: bridge user [pi]" 1>&2
+    echo "           -g group: tap device owning group [netdev]" 1>&2
+    echo "           -i interface: interface to convert to bridge [eth0]" 1>&2
+    echo "           -b bridge: bridge interface name [br0]" 1>&2
+    echo "           -n number-of-taps: number of tap interfaces [4]" 1>&2
+    echo "           -f first-tap: first tap interface [0]" 1>&2
+    echo " " 1>&2
+    echo "  or set from environment: -u: BRIDGE_USER" 1>&2
+    echo "                           -g: NETDEV_GRP" 1>&2
+    echo "                           -i: IF" 1>&2
+    echo "                           -b: BRIDGE" 1>&2
+    echo "                           -n: NUM_TAP" 1>&2
+    echo "                           -f: FIRST_TAP" 1>&2
+}
+
+# Start of mainline code
+
+if [ -e /etc/default/brnet ]; then
+    . /etc/default/brnet
+fi
+
+# Defaults
+IF=${IF:-"eth0"}
+BRIDGE=${BRIDGE:-"br0"}
+BRIDGE_USER=${BRIDGE_USER:-"pi"}    # must be in ...
+NETDEV_GRP=${NETDEV_GRP:-"netdev"}  # group with write access to tap devices
+NUM_TAP=${NUM_TAP:-4}
+FIRST_TAP={$FIRST_TAP:-0}
+
+# Get user options
+while getopts ":hu:g:i:b:n:f:" opt; do
+    case ${opt} in
+        h)
+            usage
+	    exit 0
+            ;;
+        u)
+            BRIDGE_USER=$OPTARG
+            ;;
+        g)
+            NETDEV_GRP=$OPTARG
+            ;;
+        i)
+            IF=$OPTARG
+            ;;
+        b)
+            BRIDGE=$OPTARG
+            ;;
+        n)
+            NUM_TAP=$OPTARG
+            ;;
+	f)
+	    FIRST_TAP=$OPTARG
+	    ;;
+        \?)
+            echo "Invalid option: -$OPTARG" 1>&2
+            exit 1
+            ;;
+    esac
+done
+shift $((OPTIND -1))
+verb=$1
+
+# Get numeric values for user and group
+_UID=$(id -u ${BRIDGE_USER})
+_GID=$(grep ^${NETDEV_GRP} /etc/group | cut -d ':' -f 3)
+# Calculate last tap
+LAST_TAP=$((FIRST_TAP + NUM_TAP - 1))
+
+# Carry out the request
+case $verb in
+    start)
+	start_bridge
+	;;
+    stop)
+	stop_bridge
+	;;
+    *)
+	usage
+	exit 2
+	;;
+esac
+    

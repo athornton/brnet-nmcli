@@ -1,0 +1,7 @@
+# Apple desktop info
+.DS_Store
+
+# Editor temp files
+*.bak
+*~
+\#*

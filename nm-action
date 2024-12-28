@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+interface=$1
+event=$2
+
+if [ -e /etc/default/brnet ] ; then
+    . /etc/default/brnet
+fi
+export BRIDGE_USER NETDEV_GRP IF BRIDGE NUM_TAP FIRST_TAP
+
+if [ -z "${BRNET}" ]; then
+    BRNET="/usr/local/sbin/brnet-nmcli"
+fi
+
+if [[ $interface == "${IF}" ]] && [[ $event == "@@STATE@@" ]]; then
+    ${BRNET} @@VERB@@
+fi

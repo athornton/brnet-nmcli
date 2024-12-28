@@ -3,6 +3,7 @@
 interface=$1
 event=$2
 
+sentinel="/var/run/NetworkManager/brnet"
 if [ -e /etc/default/brnet ] ; then
     . /etc/default/brnet
 fi
@@ -12,6 +13,12 @@ if [ -z "${BRNET}" ]; then
     BRNET="/usr/local/sbin/brnet-nmcli"
 fi
 
-if [[ $interface == "${IF}" ]] && [[ $event == "@@STATE@@" ]]; then
-    ${BRNET} @@VERB@@
+if [ "$interface" == "${IF}" ]; then
+    if [ "${event}" == "up" ] && [ ! -e "${sentinel}" ]; then
+	touch "${sentinel}"
+	${BRNET} start
+    elif [ "${event}"  == "down" ] && [ -e "${sentinel}" ]; then
+	${BRNET} stop
+	rm -f "${sentinel}"
+    fi
 fi

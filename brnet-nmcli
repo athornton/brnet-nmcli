@@ -24,7 +24,7 @@ start_bridge() {
     nmcli con add type bridge-slave ifname ${IF} con-name ${IF} \
 	  master ${BRIDGE} save no
     # Get bridge address with DHCP
-    nmcli con modify ${BRIDGE} ipv4.method auto
+    nmcli con modify ${BRIDGE} ipv4.method auto save no
     # Add all our tap devices to the bridge
     for idx in $(seq ${FIRST_TAP} ${LAST_TAP}); do
 	nmcli conn add type tun \

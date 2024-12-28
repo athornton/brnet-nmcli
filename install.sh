@@ -22,9 +22,8 @@ chmod 0644 ${def}
 nmdir="/etc/NetworkManager/dispatcher.d"
 nmup="${nmdir}/20-brnet"
 nmdn="${nmdir}/pre-down.d/20-brnet"
-sed -e "s|@@STATE@@|up|"   -e "s|@@VERB@@|start|" < ./nm-action > "${nmup}"
-sed -e "s|@@STATE@@|down|" -e "s|@@VERB@@|stop|"  < ./nm-action > "${nmdn}"
-chown root:root "${nmup}" "${nmdn}"
-chmod 0755 "${nmup}" "${nmdn}"
+for t in "${nmup}" "${nmdn}"; do
+    install -m 0755 -o root -g root nm-action "${t}"
+done
 
 install -m 0755 -o root -g root brnet-nmcli "${tgt}/brnet-nmcli"

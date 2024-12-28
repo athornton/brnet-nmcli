@@ -42,6 +42,7 @@ be:
 	interface=$1
 	event=$2
 
+	sentinel="/var/run/NetworkManager/brnet"
 	if [ -e /etc/default/brnet ] ; then
 		. /etc/default/brnet
 	fi
@@ -51,14 +52,17 @@ be:
 		BRNET="/usr/local/sbin/brnet-nmcli"
 	fi
 
-	if [[ $interface == ${IF} ]] && [[ $event == "@@STATE@@" ]]; then
-		${BRNET} @@VERB@@
+	if [ "$interface" == "${IF}" ]; then
+		if [ "${event}" == "up" ] && [ ! -e "${sentinel}" ]; then
+		touch "${sentinel}"
+		${BRNET} start
+		elif [ "${event}"  == "down" ] && [ -e "${sentinel}" ]; then
+		${BRNET} stop
+		rm -f "${sentinel}"
+		fi
 	fi
 
-Where `@@STATE@@` should be replaced by `up` for the first file and
-`down` for the second, and `@@VERB@@` should be replaced by `start` for
-the first file and `stop` for the second.  These files should be owned
-by `root` and be executable.
+These files should be owned by `root` and be executable.
 
 Express Installation
 --------------------

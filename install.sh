@@ -16,7 +16,7 @@ install -o root -g root -m 0755 brnet-nmcli "${tgt}"
 
 def="/etc/default/brnet"
 if [ -e "${def}" ]; then
-    cp "${def}" "${def}.save"
+    def="/etc/default/brnet.dist"
 fi
 svc="/etc/systemd/system/brnet.service"
 sed -e "s|/usr/local/sbin|${tgt}|" < ./brnet-default > "${def}"

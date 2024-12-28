@@ -20,14 +20,24 @@ Operation
 following options:
 
     -h:                display help
-    -u user:           bridge user [$BRIDGE_USER | pi]
-    -g group:          tap device owning group [$NETDEV_GRP | netdev]
-    -i interface:      interface to convert to bridge [$IF | eth0]
-    -b bridge:         bridge interface name [$BRIDGE | br0]
-    -n number-of-taps: maximum number of tap interfaces [$NUM_TAP | 4]
+    -u user:           bridge user                    [$BRIDGE_USER |     pi]
+    -g group:          tap device owning group        [$NETDEV_GRP  | netdev]
+    -i interface:      interface to convert to bridge [$IF          |   eth0]
+    -b bridge:         bridge interface name          [$BRIDGE      |    br0]
+    -n number-of-taps: number of tap interfaces       [$NUM_TAP     |      4]
+	-f first-tap:      number of first tap interface  [$FIRST_TAP   |      0]
 
-Installation
-------------
+Express Installation
+--------------------
+
+On Debian "Bookworm", you can just run
+`sudo ./install.sh [target-directory]` from the directory containing
+[this README.md](./README.md).  If you omit `target-directory` then
+`/usr/local/sbin` will be used.
+
+
+Manual installation On Debian "Bookworm" (or similar)
+-----------------------------------------------------
 
 Install `brnet-nmcli` as executable by `root` somewhere (I use
 `/usr/local/sbin`).  Install [the brnet settings file](./brnet-settings)
@@ -37,10 +47,16 @@ Install [the brnet systemd unit file](./brnet.service) as
 `/etc/systemd/system/brnet.service` and enable the service with
 `systemctl enable brnet.service`.
 
-Express Installation
---------------------
+Installation On Other Distributions
+-----------------------------------
 
-Or, more simply, run `sudo ./install.sh [target-directory]` from this
-directory.  If you omit `target-directory` `/usr/local/sbin` will be
-used.
+This is only ever going to work on NetworkManager-managed systems.  If
+you are not using NetworkManager (good for you!), then you probably want
+[brnet Classic](https://github.com/athornton/brnet) instead.
 
+If you are using NetworkManager, but you don't have systemd and/or the
+`/etc/default` directory, the salient point is that you want to run
+`brnet-nmcli start` after your network is already up with its real
+devices, and run `brnet-nmcli stop` just before you bring your network's
+real devices down.  Use environment variables or command-line arguments
+to control its operation.

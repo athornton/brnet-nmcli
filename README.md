@@ -33,36 +33,9 @@ Install `brnet-nmcli` as executable by `root` somewhere (I use
 `/usr/local/sbin`).  Install [the brnet settings file](./brnet-settings)
 as `/etc/default/brnet` and edit it to suit your own environment.
 
-Then add `20-brnet` to `/etc/NetworkDispatcher/dispatcher.d` and to
-`/etc/NetworkDispatcher/dispatcher.d/pre-down.d`.  The contents should
-be:
-
-	#!/usr/bin/env bash
-
-	interface=$1
-	event=$2
-
-	sentinel="/var/run/NetworkManager/brnet"
-	if [ -e /etc/default/brnet ] ; then
-		. /etc/default/brnet
-	fi
-	export BRIDGE_USER NETDEV_GRP IF BRIDGE NUM_TAP FIRST_TAP
-
-	if [ -z "${BRNET}" ]; then
-		BRNET="/usr/local/sbin/brnet-nmcli"
-	fi
-
-	if [ "$interface" == "${IF}" ]; then
-		if [ "${event}" == "up" ] && [ ! -e "${sentinel}" ]; then
-		touch "${sentinel}"
-		${BRNET} start
-		elif [ "${event}"  == "down" ] && [ -e "${sentinel}" ]; then
-		${BRNET} stop
-		rm -f "${sentinel}"
-		fi
-	fi
-
-These files should be owned by `root` and be executable.
+Install [the brnet systemd unit file](./brnet.service) as
+`/etc/systemd/system/brnet.service` and enable the service with
+`systemctl enable brnet.service`.
 
 Express Installation
 --------------------

@@ -1,0 +1,14 @@
+[Unit]
+Description=Multi-tap network service
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/brnet-nmcli start
+ExecStop=/usr/local/sbin/brnet-nmcli stop
+User=root
+WorkingDirectory=/tmp
+
+[Install]
+WantedBy=multi-user.target

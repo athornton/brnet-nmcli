@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Install brnet-nmcli on a Debian-ish system (using /etc/default and
-# NetworkManager).  Must be run as root.
+# Install brnet-nmcli on a Debian-ish system (using /etc/default, systemd,
+# and NetworkManager).  Must be run as root.
 
 tgt="/usr/local/sbin"
 if [ -n "$1" ]; then
@@ -12,18 +12,16 @@ if [ -n "$2" ]; then
     exit 1
 fi
 
+install -o root -g root -m 0755 brnet-nmcli "${tgt}"
+
 def="/etc/default/brnet"
 if [ -e "${def}" ]; then
     cp "${def}" "${def}.save"
 fi
+svc="/etc/systemd/system/brnet.service"
 sed -e "s|/usr/local/sbin|${tgt}|" < ./brnet-default > "${def}"
-chmod 0644 ${def}
+sed -e "s|/usr/local/sbin|${tgt}|" < ./brnet.service > "${svc}"
+chown root:root ${def} ${svc}
+chmod 0644 ${def} ${svc}
 
-nmdir="/etc/NetworkManager/dispatcher.d"
-nmup="${nmdir}/20-brnet"
-nmdn="${nmdir}/pre-down.d/20-brnet"
-for t in "${nmup}" "${nmdn}"; do
-    install -m 0755 -o root -g root nm-action "${t}"
-done
-
-install -m 0755 -o root -g root brnet-nmcli "${tgt}/brnet-nmcli"
+systemctl enable brnet.service

@@ -77,8 +77,8 @@ IF=${IF:-"eth0"}
 BRIDGE=${BRIDGE:-"br0"}
 BRIDGE_USER=${BRIDGE_USER:-"pi"}    # must be in ...
 NETDEV_GRP=${NETDEV_GRP:-"netdev"}  # group with write access to tap devices
-NUM_TAP=${NUM_TAP:-4}
-FIRST_TAP={$FIRST_TAP:-0}
+NUM_TAP=${NUM_TAP:-"4"}
+FIRST_TAP=${FIRST_TAP:-"0"}
 
 # Get user options
 while getopts ":hu:g:i:b:n:f:" opt; do

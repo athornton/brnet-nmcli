@@ -8,10 +8,25 @@ The first and second versions used `brctl` to provide this
 functionality.  As of Debian Bookworm, NetworkManager appears to no
 longer be optional, so this version relies on `nmcli`.
 
-The original motivation was to provide for many emulated computers
-running on a single Raspberry Pi, each with access to its own dedicated
-tap network interface so that it could run as a non-root user and still
-bring up an IP stack allowing remote access.
+Motivation
+----------
+
+I run a lot of historical systems, mostly with
+[simh](https://github.com/open-simh/simh), but some with other
+emulators.  Simh in particular has no need to run as root in normal
+operation, so it would be nice to allow it, when running an OS that
+supports a TCP/IP stack, to be able to use the network, and, crucially,
+to allow devices from the outside to connect to its TCP/IP stack.
+
+Modern simh allows you to do fairly complicated NAT setup to facilitate
+this, but my preference is simply to expose the guest stack as another
+IP address on my network.
+
+With this tool it is possible to define an arbitrary number of tap
+devices for assignation to the emulated hosts, owned by (and with group
+membership also appropriately set) the user that is going to be running
+the emulator, and to easily integrate that into system startup and
+shutdown.
 
 Operation
 ---------
@@ -60,3 +75,71 @@ If you are using NetworkManager, but you don't have systemd and/or the
 devices, and run `brnet-nmcli stop` just before you bring your network's
 real devices down.  Use environment variables or command-line arguments
 to control its operation.
+
+Usage By Emulators
+------------------
+
+In the general case, all you need to do is decide which tap device
+should be used by which emulator, and configure the emulator
+appropriately.
+
+For instance, here's the configuration for [Jonny Bilquist's distribution
+of RSX-11M+](http://mim.stupi.net/pidp.htm):
+
+	set cpu 11/70
+	set cpu 4096
+	set cpu idle
+	sho cpu
+
+	set rq0 rauser=1024
+	att rq0 pidp.dsk
+	sho rq0
+
+	set rq1 autosize
+	attach rq1 PiDP11_DU1.dsk
+
+	set tq0 write
+	att -f tq0 e11 pidp.tap
+	sho tq0
+
+	set clk 50
+	set dz lines=8
+	att dz 10001,speed=*32
+	sho dz
+
+	set xu ena
+	set xu type=delua
+	set xu mac=aa:00:04:00:2d:2c
+	; DECNET Phase IV 11.45
+	attach xu tap:tap5
+	set xu throttle
+	sho xu
+
+	boot rq0
+
+Only the `xu` lines are relevant to TCP/IP networking.  The only part
+that is directly relevant here is `attach xu tap:tap5`.  On this host
+system I am coupling this particular simh instance to `tap5` created
+with the settings:
+
+	# brnet-nmcli settings
+
+	# brnet-nmcli executable
+	BRNET="/usr/local/sbin/brnet-nmcli"
+
+	# Default settings
+	# BRIDGE_USER="pi"
+	# NETDEV_GRP="netdev"
+	# IF="eth0"
+	# BRIDGE="br0"
+	# NUM_TAP=4
+	# FIRST_TAP=0
+
+	BRIDGE_USER="adam"
+	IF="end0"
+	NUM_TAP=12
+
+The differences from the default config are:
+* The emulator user is `adam` rather than `pi`.
+* The primary ethernet interface is named `end0` rather than `eth0`.
+* I am using 12 tap interfaces rather than 4.
